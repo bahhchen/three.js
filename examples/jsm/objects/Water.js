@@ -236,6 +236,7 @@ class Water extends Mesh {
 
 			mirrorShader.fragmentShader = mirrorShader.fragmentShader.replace("vec4 noise = getNoise( worldPosition.xz * size )", "vec4 noise = getNoise( (worldPosition.xy + normalOffset) * size );");
 			mirrorShader.fragmentShader = mirrorShader.fragmentShader.replace("vec3 surfaceNormal = normalize( noise.xzy * vec3( 1.5, 1.0, 1.5 ) );", "vec3 surfaceNormal = normalize( noise.xyz * vec3( 1.5, 1.5, 1.0) );");
+			mirrorShader.fragmentShader = mirrorShader.fragmentShader.replace("vec2 distortion = surfaceNormal.xz * ( 0.001 + 1.0 / distance ) * distortionScale;", "vec2 distortion = surfaceNormal.xy * ( 0.001 + 1.0 / distance ) * distortionScale;");
 		}
 
 		const material = new ShaderMaterial( {
