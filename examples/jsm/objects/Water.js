@@ -8,6 +8,7 @@ import {
 	ShaderMaterial,
 	UniformsLib,
 	UniformsUtils,
+	Vector2,
 	Vector3,
 	Vector4,
 	WebGLRenderTarget
@@ -48,6 +49,14 @@ class Water extends Mesh {
 		 * @default true
 		 */
 		this.isWater = true;
+		// 朝向轴
+		// this._upAxis = 'y' || options.upAxis;
+		// this._upAxis.toLowerCase();
+		this._fromMap = options.fromMap;
+
+		if (this._fromMap){
+			this._startTime = Date.now();// 记录初始时间戳
+		}
 
 		const scope = this;
 
@@ -67,6 +76,10 @@ class Water extends Mesh {
 		const fog = options.fog !== undefined ? options.fog : false;
 
 		//
+		if (options.convertColorSpace){
+			sunColor[options.convertColorSpace]();
+			waterColor[options.convertColorSpace]();
+		}
 
 		const mirrorPlane = new Plane();
 		const normal = new Vector3();
@@ -210,6 +223,21 @@ class Water extends Mesh {
 
 		};
 
+		if (this._fromMap){//(this._upAxis == 'z'){
+
+			{ // normalOffset
+				let part1 = "uniform sampler2D normalSampler;";
+				let sIdx = mirrorShader.fragmentShader.indexOf(part1);         
+				let eIdx = sIdx + part1.length;
+				mirrorShader.fragmentShader = mirrorShader.fragmentShader.slice(0, eIdx) + "\n	uniform vec2 normalOffset;\n" + mirrorShader.fragmentShader.slice(eIdx);
+
+				mirrorShader.uniforms['normalOffset'] = { value: new Vector2() };
+			}
+
+			mirrorShader.fragmentShader = mirrorShader.fragmentShader.replace("vec4 noise = getNoise( worldPosition.xz * size )", "vec4 noise = getNoise( (worldPosition.xy + normalOffset) * size );");
+			mirrorShader.fragmentShader = mirrorShader.fragmentShader.replace("vec3 surfaceNormal = normalize( noise.xzy * vec3( 1.5, 1.0, 1.5 ) );", "vec3 surfaceNormal = normalize( noise.xyz * vec3( 1.5, 1.5, 1.0) );");
+		}
+
 		const material = new ShaderMaterial( {
 			name: mirrorShader.name,
 			uniforms: UniformsUtils.clone( mirrorShader.uniforms ),
@@ -235,6 +263,14 @@ class Water extends Mesh {
 		scope.material = material;
 
 		scope.onBeforeRender = function ( renderer, scene, camera ) {
+
+			if (scope._fromMap){// 获取当前时间，单位是毫秒
+				const currentTime = Date.now();    
+				// 计算从开始到现在的秒数差
+				const elapsedTime = (currentTime - scope._startTime) / 1000; // 转换为秒			
+				// 更新 uniform 中的 time 值
+				scope.material.uniforms['time'].value = elapsedTime;
+			}
 
 			mirrorWorldPosition.setFromMatrixPosition( scope.matrixWorld );
 			cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );
@@ -316,7 +352,34 @@ class Water extends Mesh {
 			const currentXrEnabled = renderer.xr.enabled;
 			const currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
 
-			scope.visible = false;
+			let skybg = undefined, bgvisible, planeVisible;;
+			if (scope._fromMap){
+				// const currentToneMapping = renderer.toneMapping;
+				// const currentToneMappingExposure = renderer.toneMappingExposure;
+				// const currentLuminance = scope._sky.material.uniforms["luminance"].value;
+
+				// console.log("vvvvvvvvvvvvv2^^^^^^^^^^^^^", scene._skyScene ? "1 ":" 0");
+				if (scene._skyScene && scene._skyScene.scene){
+					skybg = scene._skyScene.scene;
+					bgvisible = skybg.visible;
+					skybg.visible = false;
+				}
+				if (scope._sky){
+					scope._sky.visible = true;
+					scene.add(scope._sky);
+				}
+				
+				if (scope._plane){
+					planeVisible = scope._plane.visible;
+					scope._plane.visible = false;
+				}
+
+				scope.visible = false;
+
+				renderer._fromWater = true;
+			}else{
+				scope.visible = false;
+			}
 
 			renderer.xr.enabled = false; // Avoid camera modification and recursion
 			renderer.shadowMap.autoUpdate = false; // Avoid re-computing shadows
@@ -330,8 +393,21 @@ class Water extends Mesh {
 
 			scope.visible = true;
 
+			if (scope._plane){
+				scope._plane.visible = planeVisible;
+			}			
+			if (scope._sky){
+				scope._sky.visible = false;
+				scene.remove(scope._sky);
+			}
+			if (skybg){
+				skybg.visible = bgvisible;
+			}
+
 			renderer.xr.enabled = currentXrEnabled;
 			renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
+
+			delete renderer._fromWater;
 
 			renderer.setRenderTarget( currentRenderTarget );
 
@@ -345,6 +421,44 @@ class Water extends Mesh {
 
 			}
 
+			scope._isDownload = true;
+			if (!scope._isDownload){
+				scope._isDownload = true;
+				// 读取渲染目标中的颜色值
+				const pixelBuffer = new Uint8Array(textureWidth * textureHeight * 4); // RGBA 像素缓冲区
+				renderer.readRenderTargetPixels(renderTarget, 0, 0, textureWidth, textureHeight, pixelBuffer);
+	
+				// 创建一个 canvas 元素
+				const canvas = document.createElement("canvas");
+				canvas.width = textureWidth;
+				canvas.height = textureHeight;
+				const ctx = canvas.getContext("2d");
+	
+				// 创建 ImageData 对象
+				const imageData = ctx.createImageData(textureWidth, textureHeight);
+	
+				// 将 pixelBuffer 数据拷贝到 ImageData
+				for (let i = 0; i < pixelBuffer.length; i++) {
+					imageData.data[i] = pixelBuffer[i];
+				}
+	
+				// 将 ImageData 绘制到 canvas
+				ctx.putImageData(imageData, 0, 0);
+	
+				// 将 canvas 转换为 PNG 数据 URL
+				const dataUrl = canvas.toDataURL("image/png");
+	
+				// 创建一个链接以便下载 PNG
+				const downloadLink = document.createElement("a");
+				downloadLink.href = dataUrl;
+				downloadLink.download = "rendered_image.png";
+			
+				// 模拟点击触发下载
+				downloadLink.click();
+
+				// 清理临时链接（不显示在页面上）
+				downloadLink.remove();
+			}
 		};
 
 	}

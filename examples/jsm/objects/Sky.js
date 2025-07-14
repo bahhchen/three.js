@@ -67,6 +67,7 @@ Sky.SkyShader = {
 	name: 'SkyShader',
 
 	uniforms: {
+		'luminance_srgb': { value: 0 },
 		'turbidity': { value: 2 },
 		'rayleigh': { value: 1 },
 		'mieCoefficient': { value: 0.005 },
@@ -155,6 +156,7 @@ Sky.SkyShader = {
 		varying vec3 vBetaM;
 		varying float vSunE;
 
+		uniform float luminance_srgb;
 		uniform float mieDirectionalG;
 		uniform vec3 up;
 
@@ -183,6 +185,20 @@ Sky.SkyShader = {
 			float g2 = pow( g, 2.0 );
 			float inverse = 1.0 / pow( 1.0 - 2.0 * g * cosTheta + g2, 1.5 );
 			return ONE_OVER_FOURPI * ( ( 1.0 - g2 ) * inverse );
+		}
+
+		// Filmic ToneMapping http://filmicgames.com/archives/75
+		const float A = 0.15;
+		const float B = 0.50;
+		const float C = 0.10;
+		const float D = 0.20;
+		const float E = 0.02;
+		const float F = 0.30;
+
+		const float whiteScale = 1.0748724675633854; // 1.0 / Uncharted2Tonemap(1000.0)
+
+		vec3 Uncharted2Tonemap( vec3 x ) {
+			return ( ( x * ( A * x + C * B ) + D * E ) / ( x * ( A * x + B ) + D * F ) ) - E / F;
 		}
 
 		void main() {
@@ -222,6 +238,12 @@ Sky.SkyShader = {
 			L0 += ( vSunE * 19000.0 * Fex ) * sundisk;
 
 			vec3 texColor = ( Lin + L0 ) * 0.04 + vec3( 0.0, 0.0003, 0.00075 );
+
+			if (luminance_srgb > 0.0)
+			{
+				vec3 curr = Uncharted2Tonemap( ( log2( 2.0 / pow( luminance_srgb, 4.0 ) ) ) * texColor );
+				texColor = curr * whiteScale;
+			}
 
 			vec3 retColor = pow( texColor, vec3( 1.0 / ( 1.2 + ( 1.2 * vSunfade ) ) ) );
 

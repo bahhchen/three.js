@@ -1764,7 +1764,11 @@ class WebGLRenderer {
 
 						if ( sortObjects ) {
 
-							if ( object.boundingSphere !== undefined ) {
+							if (0 && object._disableBoundingSort){//不使用包围盒排序 add by chenhh
+
+								_vector4.set(0, 0, 0, 1);
+
+							} else if ( object.boundingSphere !== undefined ) {
 
 								if ( object.boundingSphere === null ) object.computeBoundingSphere();
 								_vector4.copy( object.boundingSphere.center );
