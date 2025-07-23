@@ -464,6 +464,49 @@ class Water extends Mesh {
 
 	}
 
+	dispose(){
+		this.traverse( function ( node ) {
+            
+			for (const key of Object.keys(node)){
+				const value = node[key];
+				if (!value){
+					continue;
+				}
+
+				if (value.isMaterial ){
+
+					if (value.uniforms){
+						for (const uk of Object.keys(value.uniforms)){
+							const uval = value.uniforms[uk];
+	
+							if (uval){
+								if (uval.value && uval.value.dispose){
+									uval.value.dispose();
+								}
+	
+								// if ( uval.dispose){
+								// 	uval.dispose();
+								// }
+							}
+						}
+					}
+
+					for (const mk of Object.keys(value)){
+						const mval = value[mk];
+
+						if (mval && mval.dispose){
+							mval.dispose();
+						}
+					}
+				}
+
+				if (value.dispose){
+					value.dispose();
+				}
+			}
+		} );
+	}
+
 }
 
 /**
