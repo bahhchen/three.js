@@ -1,5 +1,6 @@
 import TempNode from '../core/TempNode.js';
 import { addMethodChaining, nodeObject } from '../tsl/TSLCore.js';
+import { log } from '../../utils.js';
 
 class DebugNode extends TempNode {
 
@@ -56,7 +57,7 @@ class DebugNode extends TempNode {
 
 		} else {
 
-			console.log( code );
+			log( code );
 
 		}
 
@@ -77,6 +78,6 @@ export default DebugNode;
  * @param {?Function} [callback=null] - Optional callback function to handle the debug output.
  * @returns {DebugNode}
  */
-export const debug = ( node, callback = null ) => nodeObject( new DebugNode( nodeObject( node ), callback ) );
+export const debug = ( node, callback = null ) => nodeObject( new DebugNode( nodeObject( node ), callback ) ).toStack();
 
 addMethodChaining( 'debug', debug );

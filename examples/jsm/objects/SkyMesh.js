@@ -9,11 +9,11 @@ import {
 import { Fn, float, vec3, acos, add, mul, clamp, cos, dot, exp, max, mix, modelViewProjection, normalize, positionWorld, pow, smoothstep, sub, varyingProperty, vec4, uniform, cameraPosition } from 'three/tsl';
 
 /**
- * Represents a skydome for scene backgrounds. Based on [A Practical Analytic Model for Daylight]{@link https://www.researchgate.net/publication/220720443_A_Practical_Analytic_Model_for_Daylight}
+ * Represents a skydome for scene backgrounds. Based on [A Practical Analytic Model for Daylight](https://www.researchgate.net/publication/220720443_A_Practical_Analytic_Model_for_Daylight)
  * aka The Preetham Model, the de facto standard for analytical skydomes.
  *
- * Note that this class can only be used with {@link WebGLRenderer}.
- * When using {@link WebGPURenderer}, use {@link SkyMesh}.
+ * Note that this class can only be used with {@link WebGPURenderer}.
+ * When using {@link WebGLRenderer}, use {@link Sky}.
  *
  * More references:
  *
@@ -88,8 +88,18 @@ class SkyMesh extends Mesh {
 		 * @type {boolean}
 		 * @readonly
 		 * @default true
+		 * @deprecated Use isSkyMesh instead.
 		 */
-		this.isSky = true;
+		this.isSky = true; // @deprecated, r182
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isSkyMesh = true;
 
 		// Varyings
 
@@ -165,7 +175,7 @@ class SkyMesh extends Mesh {
 
 		} )();
 
-		const fragmentNode = /*@__PURE__*/ Fn( () => {
+		const colorNode = /*@__PURE__*/ Fn( () => {
 
 			// constants for atmospheric scattering
 			const pi = float( 3.141592653589793238462643383279502884197169 );
@@ -234,7 +244,7 @@ class SkyMesh extends Mesh {
 		material.depthWrite = false;
 
 		material.vertexNode = vertexNode;
-		material.fragmentNode = fragmentNode;
+		material.colorNode = colorNode;
 
 	}
 

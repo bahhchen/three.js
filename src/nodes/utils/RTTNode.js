@@ -42,6 +42,15 @@ class RTTNode extends TextureNode {
 		super( renderTarget.texture, uv() );
 
 		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isRTTNode = true;
+
+		/**
 		 * The node to render a texture with.
 		 *
 		 * @type {Node}
@@ -193,8 +202,8 @@ class RTTNode extends TextureNode {
 			const pixelRatio = renderer.getPixelRatio();
 			const size = renderer.getSize( _size );
 
-			const effectiveWidth = size.width * pixelRatio;
-			const effectiveHeight = size.height * pixelRatio;
+			const effectiveWidth = Math.floor( size.width * pixelRatio );
+			const effectiveHeight = Math.floor( size.height * pixelRatio );
 
 			if ( effectiveWidth !== this.renderTarget.width || effectiveHeight !== this.renderTarget.height ) {
 
@@ -208,7 +217,17 @@ class RTTNode extends TextureNode {
 
 		//
 
+		let name = 'RTT';
+
+		if ( this.node.name ) {
+
+			name = this.node.name + ' [ ' + name + ' ]';
+
+		}
+
+
 		this._quadMesh.material.fragmentNode = this._rttNode;
+		this._quadMesh.name = name;
 
 		//
 
@@ -262,7 +281,7 @@ export const rtt = ( node, ...params ) => nodeObject( new RTTNode( nodeObject( n
  */
 export const convertToTexture = ( node, ...params ) => {
 
-	if ( node.isTextureNode ) return node;
+	if ( node.isSampleNode || node.isTextureNode ) return node;
 	if ( node.isPassNode ) return node.getTextureNode();
 
 	return rtt( node, ...params );

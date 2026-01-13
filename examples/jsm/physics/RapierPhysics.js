@@ -15,7 +15,16 @@ function getShape( geometry ) {
 
 	// TODO change type to is*
 
-	if ( geometry.type === 'BoxGeometry' ) {
+	if ( geometry.type === 'RoundedBoxGeometry' ) {
+
+		const sx = parameters.width !== undefined ? parameters.width / 2 : 0.5;
+		const sy = parameters.height !== undefined ? parameters.height / 2 : 0.5;
+		const sz = parameters.depth !== undefined ? parameters.depth / 2 : 0.5;
+		const radius = parameters.radius !== undefined ? parameters.radius : 0.1;
+
+		return RAPIER.ColliderDesc.roundCuboid( sx - radius, sy - radius, sz - radius, radius );
+
+	} else if ( geometry.type === 'BoxGeometry' ) {
 
 		const sx = parameters.width !== undefined ? parameters.width / 2 : 0.5;
 		const sy = parameters.height !== undefined ? parameters.height / 2 : 0.5;
@@ -63,6 +72,8 @@ function getShape( geometry ) {
 		return RAPIER.ColliderDesc.trimesh( vertices, indices );
 
 	}
+
+	console.error( 'RapierPhysics: Unsupported geometry type:', geometry.type );
 
 	return null;
 
@@ -273,17 +284,17 @@ async function RapierPhysics() {
 	function addHeightfield( mesh, width, depth, heights, scale ) {
 
 		const shape = RAPIER.ColliderDesc.heightfield( width, depth, heights, scale );
-		
+
 		const bodyDesc = RAPIER.RigidBodyDesc.fixed();
 		bodyDesc.setTranslation( mesh.position.x, mesh.position.y, mesh.position.z );
 		bodyDesc.setRotation( mesh.quaternion );
-		
+
 		const body = world.createRigidBody( bodyDesc );
 		world.createCollider( shape, body );
-		
+
 		if ( ! mesh.userData.physics ) mesh.userData.physics = {};
 		mesh.userData.physics.body = body;
-		
+
 		return body;
 
 	}
@@ -363,7 +374,7 @@ async function RapierPhysics() {
 		 * @name RapierPhysics#addMesh
 		 * @param {Mesh} mesh The mesh to add.
 		 * @param {number} [mass=0] The mass in kg of the mesh.
-		 * @param {number} [restitution=0] The restitution/friction of the mesh.
+		 * @param {number} [restitution=0] The restitution of the mesh, usually from 0 to 1. Represents how "bouncy" objects are when they collide with each other.
 		 */
 		addMesh: addMesh,
 

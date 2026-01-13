@@ -117,6 +117,14 @@ class Geometries extends DataMap {
 		 */
 		this.attributeCall = new WeakMap();
 
+		/**
+		 * Stores the event listeners attached to geometries.
+		 *
+		 * @private
+		 * @type {Map<BufferGeometry,Function>}
+		 */
+		this._geometryDisposeListeners = new Map();
+
 	}
 
 	/**
@@ -189,9 +197,15 @@ class Geometries extends DataMap {
 
 			geometry.removeEventListener( 'dispose', onDispose );
 
+			this._geometryDisposeListeners.delete( geometry );
+
 		};
 
 		geometry.addEventListener( 'dispose', onDispose );
+
+		// see #31798 why tracking separate remove listeners is required right now
+		// TODO: Re-evaluate how onDispose() is managed in this component
+		this._geometryDisposeListeners.set( geometry, onDispose );
 
 	}
 
@@ -297,6 +311,18 @@ class Geometries extends DataMap {
 	}
 
 	/**
+	 * Returns the byte offset into the indirect attribute buffer of the given render object.
+	 *
+	 * @param {RenderObject} renderObject - The render object.
+	 * @return {number} The byte offset into the indirect attribute buffer.
+	 */
+	getIndirectOffset( renderObject ) {
+
+		return renderObject.geometry.indirectOffset;
+
+	}
+
+	/**
 	 * Returns the index of the given render object's geometry. This is implemented
 	 * in a method to return a wireframe index if necessary.
 	 *
@@ -336,6 +362,18 @@ class Geometries extends DataMap {
 		}
 
 		return index;
+
+	}
+
+	dispose() {
+
+		for ( const [ geometry, onDispose ] of this._geometryDisposeListeners.entries() ) {
+
+			geometry.removeEventListener( 'dispose', onDispose );
+
+		}
+
+		this._geometryDisposeListeners.clear();
 
 	}
 

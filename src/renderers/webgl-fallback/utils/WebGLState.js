@@ -7,6 +7,7 @@ import {
 	NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth
 } from '../../../constants.js';
 import { Vector4 } from '../../../math/Vector4.js';
+import { error } from '../../../utils.js';
 
 let equationToGL, factorToGL;
 
@@ -83,7 +84,6 @@ class WebGLState {
 		this.currentTextureSlot = null;
 		this.currentBoundTextures = {};
 		this.currentBoundBufferBases = {};
-
 
 		this._init();
 
@@ -270,6 +270,22 @@ class WebGLState {
 
 	}
 
+	setMRTBlending( textures ) {
+
+		const gl = this.gl;
+		const drawBuffersIndexedExt = this.backend.drawBuffersIndexedExt;
+
+		if ( ! drawBuffersIndexedExt ) return;
+
+		for ( let i = 1; i < textures.length; i ++ ) {
+
+			// use opaque blending for additional render targets
+			drawBuffersIndexedExt.blendFuncSeparateiOES( i, gl.ONE, gl.ZERO, gl.ONE, gl.ZERO );
+
+		}
+
+	}
+
 	/**
 	 * Defines the blending.
 	 *
@@ -343,7 +359,7 @@ class WebGLState {
 							break;
 
 						default:
-							console.error( 'THREE.WebGLState: Invalid blending: ', blending );
+							error( 'WebGLState: Invalid blending: ', blending );
 							break;
 
 					}
@@ -361,15 +377,15 @@ class WebGLState {
 							break;
 
 						case SubtractiveBlending:
-							console.error( 'THREE.WebGLState: SubtractiveBlending requires material.premultipliedAlpha = true' );
+							error( 'WebGLState: SubtractiveBlending requires material.premultipliedAlpha = true' );
 							break;
 
 						case MultiplyBlending:
-							console.error( 'THREE.WebGLState: MultiplyBlending requires material.premultipliedAlpha = true' );
+							error( 'WebGLState: MultiplyBlending requires material.premultipliedAlpha = true' );
 							break;
 
 						default:
-							console.error( 'THREE.WebGLState: Invalid blending: ', blending );
+							error( 'WebGLState: Invalid blending: ', blending );
 							break;
 
 					}
@@ -609,11 +625,11 @@ class WebGLState {
 
 		if ( boolean ) {
 
-			gl.enable( gl.SCISSOR_TEST );
+			this.enable( gl.SCISSOR_TEST );
 
 		} else {
 
-			gl.disable( gl.SCISSOR_TEST );
+			this.disable( gl.SCISSOR_TEST );
 
 		}
 
@@ -754,7 +770,7 @@ class WebGLState {
 
 		this.setPolygonOffset( material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits );
 
-		material.alphaToCoverage === true && this.backend.renderer.samples > 1
+		material.alphaToCoverage === true && this.backend.renderer.currentSamples > 0
 			? this.enable( gl.SAMPLE_ALPHA_TO_COVERAGE )
 			: this.disable( gl.SAMPLE_ALPHA_TO_COVERAGE );
 
@@ -848,7 +864,7 @@ class WebGLState {
 	 * Sets the vertex state by binding the given VAO and element buffer.
 	 *
 	 * @param {WebGLVertexArrayObject} vao - The VAO.
-	 * @param {WebGLBuffer} indexBuffer - The index buffer.
+	 * @param {?WebGLBuffer} indexBuffer - The index buffer.
 	 * @return {boolean} Whether a vertex state has been changed or not.
 	 */
 	setVertexState( vao, indexBuffer = null ) {

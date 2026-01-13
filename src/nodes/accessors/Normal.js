@@ -4,9 +4,10 @@ import { modelNormalMatrix, modelWorldMatrix } from './ModelNode.js';
 import { mat3, vec3, Fn } from '../tsl/TSLBase.js';
 import { positionView } from './Position.js';
 import { directionToFaceDirection } from '../display/FrontFacingNode.js';
+import { warn } from '../../utils.js';
 
 /**
- * TSL object that represents the normal attribute of the current rendered object.
+ * TSL object that represents the normal attribute of the current rendered object in local space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -14,7 +15,7 @@ import { directionToFaceDirection } from '../display/FrontFacingNode.js';
 export const normalGeometry = /*@__PURE__*/ attribute( 'normal', 'vec3' );
 
 /**
- * TSL object that represents the vertex normal in local space of the current rendered object.
+ * TSL object that represents the vertex normal of the current rendered object in local space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -23,7 +24,7 @@ export const normalLocal = /*@__PURE__*/ ( Fn( ( builder ) => {
 
 	if ( builder.geometry.hasAttribute( 'normal' ) === false ) {
 
-		console.warn( 'THREE.TSL: Vertex attribute "normal" not found on geometry.' );
+		warn( 'TSL: Vertex attribute "normal" not found on geometry.' );
 
 		return vec3( 0, 1, 0 );
 
@@ -34,7 +35,7 @@ export const normalLocal = /*@__PURE__*/ ( Fn( ( builder ) => {
 }, 'vec3' ).once() )().toVar( 'normalLocal' );
 
 /**
- * TSL object that represents the flat vertex normal in view space of the current rendered object.
+ * TSL object that represents the flat vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -42,7 +43,7 @@ export const normalLocal = /*@__PURE__*/ ( Fn( ( builder ) => {
 export const normalFlat = /*@__PURE__*/ positionView.dFdx().cross( positionView.dFdy() ).normalize().toVar( 'normalFlat' );
 
 /**
- * TSL object that represents the vertex normal in view space of the current rendered object.
+ * TSL object that represents the vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -66,7 +67,7 @@ export const normalViewGeometry = /*@__PURE__*/ ( Fn( ( builder ) => {
 }, 'vec3' ).once() )().toVar( 'normalViewGeometry' );
 
 /**
- * TSL object that represents the vertex normal in world space of the current rendered object.
+ * TSL object that represents the vertex normal of the current rendered object in world space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -86,7 +87,7 @@ export const normalWorldGeometry = /*@__PURE__*/ ( Fn( ( builder ) => {
 }, 'vec3' ).once() )();
 
 /**
- * TSL object that represents the transformed vertex normal in view space of the current rendered object.
+ * TSL object that represents the vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -118,7 +119,7 @@ export const normalView = /*@__PURE__*/ ( Fn( ( { subBuildFn, material, context 
 }, 'vec3' ).once( [ 'NORMAL', 'VERTEX' ] ) )().toVar( 'normalView' );
 
 /**
- * TSL object that represents the transformed vertex normal in world space of the current rendered object.
+ * TSL object that represents the vertex normal of the current rendered object in world space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -126,7 +127,7 @@ export const normalView = /*@__PURE__*/ ( Fn( ( { subBuildFn, material, context 
 export const normalWorld = /*@__PURE__*/ normalView.transformDirection( cameraViewMatrix ).toVar( 'normalWorld' );
 
 /**
- * TSL object that represents the transformed clearcoat vertex normal in view space of the current rendered object.
+ * TSL object that represents the clearcoat vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -181,9 +182,9 @@ export const transformNormal = /*@__PURE__*/ Fn( ( [ normal, matrix = modelWorld
  */
 export const transformNormalToView = /*@__PURE__*/ Fn( ( [ normal ], builder ) => {
 
-	const modelNormalViewMatrix = builder.renderer.overrideNodes.modelNormalViewMatrix;
+	const modelNormalViewMatrix = builder.context.modelNormalViewMatrix;
 
-	if ( modelNormalViewMatrix !== null ) {
+	if ( modelNormalViewMatrix ) {
 
 		return modelNormalViewMatrix.transformDirection( normal );
 
@@ -200,7 +201,7 @@ export const transformNormalToView = /*@__PURE__*/ Fn( ( [ normal ], builder ) =
 // Deprecated
 
 /**
- * TSL object that represents the transformed vertex normal in view space of the current rendered object.
+ * TSL object that represents the transformed vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -208,13 +209,13 @@ export const transformNormalToView = /*@__PURE__*/ Fn( ( [ normal ], builder ) =
  */
 export const transformedNormalView = ( Fn( () => { // @deprecated, r177
 
-	console.warn( 'THREE.TSL: "transformedNormalView" is deprecated. Use "normalView" instead.' );
+	warn( 'TSL: "transformedNormalView" is deprecated. Use "normalView" instead.' );
 	return normalView;
 
 } ).once( [ 'NORMAL', 'VERTEX' ] ) )();
 
 /**
- * TSL object that represents the transformed vertex normal in world space of the current rendered object.
+ * TSL object that represents the transformed vertex normal of the current rendered object in world space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -222,13 +223,13 @@ export const transformedNormalView = ( Fn( () => { // @deprecated, r177
  */
 export const transformedNormalWorld = ( Fn( () => { // @deprecated, r177
 
-	console.warn( 'THREE.TSL: "transformedNormalWorld" is deprecated. Use "normalWorld" instead.' );
+	warn( 'TSL: "transformedNormalWorld" is deprecated. Use "normalWorld" instead.' );
 	return normalWorld;
 
 } ).once( [ 'NORMAL', 'VERTEX' ] ) )();
 
 /**
- * TSL object that represents the transformed clearcoat vertex normal in view space of the current rendered object.
+ * TSL object that represents the transformed clearcoat vertex normal of the current rendered object in view space.
  *
  * @tsl
  * @type {Node<vec3>}
@@ -236,7 +237,7 @@ export const transformedNormalWorld = ( Fn( () => { // @deprecated, r177
  */
 export const transformedClearcoatNormalView = ( Fn( () => { // @deprecated, r177
 
-	console.warn( 'THREE.TSL: "transformedClearcoatNormalView" is deprecated. Use "clearcoatNormalView" instead.' );
+	warn( 'TSL: "transformedClearcoatNormalView" is deprecated. Use "clearcoatNormalView" instead.' );
 	return clearcoatNormalView;
 
 } ).once( [ 'NORMAL', 'VERTEX' ] ) )();

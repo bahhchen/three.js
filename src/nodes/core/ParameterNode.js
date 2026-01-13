@@ -1,4 +1,4 @@
-import { nodeObject } from '../tsl/TSLBase.js';
+import { error } from '../../utils.js';
 import PropertyNode from './PropertyNode.js';
 
 /**
@@ -35,6 +35,36 @@ class ParameterNode extends PropertyNode {
 
 	}
 
+	/**
+	 * Gets the type of a member variable in the parameter node.
+	 *
+	 * @param {NodeBuilder} builder - The node builder.
+	 * @param {string} name - The name of the member variable.
+	 * @returns {string}
+	 */
+	getMemberType( builder, name ) {
+
+		const type = this.getNodeType( builder );
+		const struct = builder.getStructTypeNode( type );
+
+		let memberType;
+
+		if ( struct !== null ) {
+
+			memberType = struct.getMemberType( builder, name );
+
+		} else {
+
+			error( `TSL: Member "${ name }" not found in struct "${ type }".` );
+
+			memberType = 'float';
+
+		}
+
+		return memberType;
+
+	}
+
 	getHash() {
 
 		return this.uuid;
@@ -60,4 +90,4 @@ export default ParameterNode;
  * @param {?string} name - The name of the parameter in the shader.
  * @returns {ParameterNode}
  */
-export const parameter = ( type, name ) => nodeObject( new ParameterNode( type, name ) );
+export const parameter = ( type, name ) => new ParameterNode( type, name );
